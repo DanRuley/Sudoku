@@ -1,3 +1,5 @@
+package sudoku;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -18,80 +20,59 @@ import javax.swing.border.LineBorder;
 
 public class SudokuView extends JFrame implements ActionListener, MouseListener, KeyListener {
 
-	public static final int CELL_SIZE = 60;
-	public static final int GRID_SIZE = 9;
-	public static final int BOX_SIZE = 3;
-	public static final Font NUM_FONT = new Font("Monospaced", Font.BOLD, 25);
-	public static final Color UNSELECTED_BG = new Color(245, 245, 245);
-
+	private Cell[][] cells;
 	private JPanel hostPanel;
 	private JPanel gamePanel;
 	private JPanel[][] gameBox;
-	private Cell[][] cells;
-	private Cell toggled;
-	private int toggledRow;
-	private int toggledCol;
-	private boolean ctrlToggled;
-
-	int[][] board = { { 4, 9, 3, 7, 2, 6, 8, 5, 1 }, { 7, 1, 8, 3, 4, 5, 9, 2, 6 }, { 5, 6, 2, 8, 9, 1, 4, 7, 3 },
-			{ 8, 3, 6, 2, 5, 4, 1, 9, 7 }, { 1, 5, 9, 6, 8, 7, 3, 4, 2 }, { 2, 7, 4, 9, 1, 3, 5, 6, 8 },
-			{ 3, 2, 1, 4, 7, 9, 6, 8, 5 }, { 9, 8, 5, 1, 6, 2, 7, 3, 4 }, { 6, 4, 7, 5, 3, 8, 2, 1, 9 } };
-	int[][] initState = { { 1, 1, 0, 1, 0, 0, 0, 1, 1 }, { 1, 1, 0, 1, 1, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 1, 0, 1 },
-			{ 1, 0, 0, 1, 0, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 0, 1, 1 },
-			{ 1, 0, 0, 0, 0, 1, 1, 0, 1 }, { 0, 0, 0, 0, 1, 1, 0, 0, 1 }, { 0, 0, 0, 0, 0, 1, 0, 0, 0 } };
-	
-	private int keyLock;
+	private GameModel model;
 
 	private static final long serialVersionUID = 1L;
 
 	public SudokuView() {
-		Dimension size = new Dimension(CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE);
-		this.setSize(size);
+		Dimension size = new Dimension(Constants.CELL_SIZE * Constants.GRID_SIZE,
+				Constants.CELL_SIZE * Constants.GRID_SIZE);
 		this.setMaximumSize(size);
 		this.setMinimumSize(size);
+		this.setResizable(false);
 		this.setBackground(Color.BLACK);
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
-		toggled = null;
 
-		cells = new Cell[GRID_SIZE][GRID_SIZE];
+		model = new GameModel();
+		cells = model.getCells();
 
 		makeGameBoard();
 		hostPanel.add(gamePanel, BorderLayout.CENTER);
-		keyLock = -1;
-		ctrlToggled = false;
-		
+
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setContentPane(hostPanel);
 		this.pack();
 	}
 
 	private void makeGameBoard() {
 		gamePanel = new JPanel();
-		//gameBox = new JPanel[BOX_SIZE][BOX_SIZE];
-		GridLayout g = new GridLayout(GRID_SIZE, GRID_SIZE);
+		gameBox = new JPanel[Constants.BOX_SIZE][Constants.BOX_SIZE];
+		GridLayout g = new GridLayout(Constants.BOX_SIZE, Constants.BOX_SIZE);
 		gamePanel.setLayout(g);
-		for (int i = 0; i < GRID_SIZE; i++) {
-			for (int j = 0; j < GRID_SIZE; j++) {
-				//gameBox[i][j] = new JPanel();
-				//gameBox[i][j].setLayout(g);
-				for (int ii = 0; ii < BOX_SIZE; ii++) {
-					for (int jj = 0; jj < BOX_SIZE; jj++) {
+		for (int i = 0; i < Constants.BOX_SIZE; i++) {
+			for (int j = 0; j < Constants.BOX_SIZE; j++) {
+				gameBox[i][j] = new JPanel();
+				gameBox[i][j].setLayout(g);
+				for (int ii = 0; ii < Constants.BOX_SIZE; ii++) {
+					for (int jj = 0; jj < Constants.BOX_SIZE; jj++) {
 						int row = i * 3 + ii;
 						int col = j * 3 + jj;
-						cells[row][col] = new Cell(row, col, board[row][col], NUM_FONT);
-						cells[row][col].setEditable(false);
-						cells[row][col].addActionListener(this);
-						cells[row][col].addMouseListener(this);
-						cells[row][col].addKeyListener(this);
-						cells[row][col].setBackground(UNSELECTED_BG);
+						cells[row][col] = new Cell(row, col, model.getBoard()[row][col], Constants.NUM_FONT);
+
+						gamePanel.add(cells[row][col]);
+
 						gameBox[i][j].add(cells[row][col]);
 
 						if (initState[row][col] > 0)
 							cells[row][col].setDigit(board[row][col]);
 					}
 				}
-
-				gameBox[i][j].setBorder(new LineBorder(Color.BLACK, 3, false));
+				gameBox[i][j].setBorder(new LineBorder(Color.BLACK, 2, false));
 				gamePanel.add(gameBox[i][j]);
 			}
 		}
@@ -119,13 +100,13 @@ public class SudokuView extends JFrame implements ActionListener, MouseListener,
 		if (e.getSource() instanceof Cell) {
 			Cell c = (Cell) e.getSource();
 			if (toggled != null) {
-				toggled.setBackground(UNSELECTED_BG);
+				toggled.setBackground(Constants.UNSELECTED_BG);
 			}
 			toggled = c;
 			toggledRow = c.getRow();
 			toggledCol = c.getCol();
 			System.out.println(toggledRow + ", " + toggledCol);
-			c.setBackground(Color.yellow);
+			c.setBackground(Constants.SELECTED_BG);
 		}
 	}
 
@@ -154,8 +135,7 @@ public class SudokuView extends JFrame implements ActionListener, MouseListener,
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		
-		
+
 		Cell oldToggled = toggled;
 		int keyCode = e.getKeyCode();
 		System.out.println(keyCode);
@@ -171,8 +151,6 @@ public class SudokuView extends JFrame implements ActionListener, MouseListener,
 
 			return;
 		}
-
-
 
 		if (keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE) {
 			toggled.clearDigit();
@@ -201,8 +179,8 @@ public class SudokuView extends JFrame implements ActionListener, MouseListener,
 			}
 
 			toggled = cells[toggledRow][toggledCol];
-			toggled.setBackground(Color.yellow);
-			oldToggled.setBackground(UNSELECTED_BG);
+			toggled.setBackground(Constants.SELECTED_BG);
+			oldToggled.setBackground(Constants.UNSELECTED_BG);
 			keyLock = keyCode;
 		}
 	}
