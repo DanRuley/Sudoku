@@ -1,4 +1,5 @@
 package views;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -45,7 +46,7 @@ public class SudokuView extends JFrame implements KeyListener {
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
 		toggled = null;
-
+		this.addKeyListener(this);
 		noteKeys = new HashMap<>();
 		int i = 1;
 		for (Character c : new char[] { '!', '@', '#', '$', '%', '^', '&', '*', '(' }) {
@@ -82,8 +83,7 @@ public class SudokuView extends JFrame implements KeyListener {
 						int col = j * 3 + jj;
 						cells[row][col] = new Cell(row, col, board[row][col], initState[row][col] > 0,
 								Constants.CELL_SIZE, this);
-						cells[row][col].addKeyListener(this);
-						
+
 						gameBox[i][j].add(cells[row][col]);
 
 						if (initState[row][col] > 0)
@@ -165,13 +165,9 @@ public class SudokuView extends JFrame implements KeyListener {
 				break;
 			}
 
-			// clear old toggled bg
-			toggled.setBackground(Constants.UNSELECTED_BG);
 		}
 
-		// set new toggled bg
-		toggled = cells[toggledRow][toggledCol];
-		toggled.setBackground(Constants.SELECTED_BG);
+		setToggled(toggledRow, toggledCol);
 	}
 
 	@Override
@@ -184,8 +180,9 @@ public class SudokuView extends JFrame implements KeyListener {
 		Cell c = cells[row][col];
 
 		if (toggled != null) {
-			toggled.setBackground(Constants.UNSELECTED_BG);
+			toggled.setDefaultBackground();
 		}
+
 		toggled = c;
 		toggledRow = c.getRow();
 		toggledCol = c.getCol();

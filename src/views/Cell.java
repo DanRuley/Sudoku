@@ -35,10 +35,11 @@ public class Cell extends JPanel {
 		this.actualNumber = actualNumber;
 		this.game = game;
 
-		displayNumber = initialNumber ? actualNumber : -1;
+		this.displayNumber = initialNumber ? actualNumber : -1;
 
 		this.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		this.setPreferredSize(size);
+		this.setDefaultBackground();
 
 		this.addMouseListener(new MouseAdapter() {
 			@Override
@@ -91,6 +92,8 @@ public class Cell extends JPanel {
 
 		notes = new HashSet<>();
 		displayNumber = -1;
+
+		repaint();
 	}
 
 	@Override
@@ -132,6 +135,13 @@ public class Cell extends JPanel {
 
 			g.drawString("" + i, col, row);
 		}
+	}
+
+	public void setDefaultBackground() {
+		if (initialNumber)
+			this.setBackground(Constants.UNSELECTED_BG_INITIAL);
+		else
+			this.setBackground(Constants.UNSELECTED_BG);
 	}
 
 }
