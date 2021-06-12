@@ -8,6 +8,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
 import constants.Constants;
+import models.SudokuModel;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -15,6 +16,14 @@ import javax.swing.border.LineBorder;
 
 public class SudokuView extends JFrame implements KeyListener {
 
+	public static void main(String[] args) throws InterruptedException {
+		SudokuView s = new SudokuView();
+		s.setVisible(true);
+		s.model.backtrack();
+
+	}
+
+	private SudokuModel model;
 	private JPanel hostPanel;
 	private JPanel gamePanel;
 	private JPanel[][] gameBox;
@@ -25,19 +34,31 @@ public class SudokuView extends JFrame implements KeyListener {
 	private HashMap<Character, Integer> noteKeys;
 	private Dimension size;
 
-	int[][] board = { { 4, 9, 3, 7, 2, 6, 8, 5, 1 }, { 7, 1, 8, 3, 4, 5, 9, 2, 6 }, { 5, 6, 2, 8, 9, 1, 4, 7, 3 },
-			{ 8, 3, 6, 2, 5, 4, 1, 9, 7 }, { 1, 5, 9, 6, 8, 7, 3, 4, 2 }, { 2, 7, 4, 9, 1, 3, 5, 6, 8 },
-			{ 3, 2, 1, 4, 7, 9, 6, 8, 5 }, { 9, 8, 5, 1, 6, 2, 7, 3, 4 }, { 6, 4, 7, 5, 3, 8, 2, 1, 9 } };
+	private int[][] board;// = { { 4, 9, 3, 7, 2, 6, 8, 5, 1 }, { 7, 1, 8, 3, 4, 5, 9, 2, 6 }, { 5, 6, 2,
+							// 8, 9, 1, 4, 7, 3 },
+//			{ 8, 3, 6, 2, 5, 4, 1, 9, 7 }, { 1, 5, 9, 6, 8, 7, 3, 4, 2 }, { 2, 7, 4, 9, 1, 3, 5, 6, 8 },
+//			{ 3, 2, 1, 4, 7, 9, 6, 8, 5 }, { 9, 8, 5, 1, 6, 2, 7, 3, 4 }, { 6, 4, 7, 5, 3, 8, 2, 1, 9 } };
 
-	int[][] initState = { { 1, 1, 0, 1, 0, 0, 0, 1, 1 }, { 1, 1, 0, 1, 1, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 1, 0, 1 },
-			{ 1, 0, 0, 1, 0, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 0, 1, 1 },
-			{ 1, 0, 0, 0, 0, 1, 1, 0, 1 }, { 0, 0, 0, 0, 1, 1, 0, 0, 1 }, { 0, 0, 0, 0, 0, 1, 0, 0, 0 } };
+	private int[][] initState;// int[][] initState = { { 1, 1, 0, 1, 0, 0, 0, 1, 1 }, { 1, 1, 0, 1, 1, 0, 1,
+								// 1, 0 }, { 0, 1, 0, 0, 0, 0, 1, 0, 1 },
+//			{ 1, 0, 0, 1, 0, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 0, 1, 1 },
+//			{ 1, 0, 0, 0, 0, 1, 1, 0, 1 }, { 0, 0, 0, 0, 1, 1, 0, 0, 1 }, { 0, 0, 0, 0, 0, 1, 0, 0, 0 } };
 
 	private int keyLock;
 
 	private static final long serialVersionUID = 1L;
 
 	public SudokuView() {
+		init();
+	}
+
+	public SudokuView(int[][] board, int[][] initState) {
+		this.board = board;
+		this.initState = initState;
+		init();
+	}
+
+	private void init() {
 		size = new Dimension(Constants.CELL_PIXELS * Constants.GRID_SIZE, Constants.CELL_PIXELS * Constants.GRID_SIZE);
 		this.setSize(size);
 		this.setMaximumSize(size);
@@ -53,8 +74,11 @@ public class SudokuView extends JFrame implements KeyListener {
 			noteKeys.put(c, i++);
 		}
 
+		initState = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
+		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		cells = new Cell[Constants.GRID_SIZE][Constants.GRID_SIZE];
 
+		model = new SudokuModel(this);
 		makeGameBoard();
 		hostPanel.add(gamePanel, BorderLayout.CENTER);
 		keyLock = -1;
@@ -98,11 +122,6 @@ public class SudokuView extends JFrame implements KeyListener {
 
 	}
 
-	public static void main(String[] args) {
-		SudokuView s = new SudokuView();
-		s.setVisible(true);
-	}
-
 	@Override
 	public void keyTyped(KeyEvent e) {
 
@@ -113,10 +132,6 @@ public class SudokuView extends JFrame implements KeyListener {
 
 		int keyCode = e.getKeyCode();
 		char key = e.getKeyChar();
-		System.out.println(key);
-		System.out.println("This ran");
-
-		System.out.println(e.isShiftDown());
 
 		if (keyLock == keyCode)
 			return;
@@ -174,6 +189,14 @@ public class SudokuView extends JFrame implements KeyListener {
 	public void keyReleased(KeyEvent e) {
 		System.out.println(e.getKeyCode());
 		keyLock = -1;
+	}
+
+	public void setDigit(int row, int col, int num) {
+		cells[row][col].setDigit(num);
+	}
+
+	public void clearDigit(int row, int col) {
+		cells[row][col].clearDigit();
 	}
 
 	public void setToggled(int row, int col) {
