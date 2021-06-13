@@ -1,4 +1,4 @@
-package models;
+package utilities;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,7 +12,7 @@ import java.util.HashSet;
 import constants.Constants;
 import views.SudokuView;
 
-public class SudokuModel {
+public class SudokuGenerator {
 
 	private int[][] board;
 	private static Integer[] digits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -20,7 +20,7 @@ public class SudokuModel {
 	private HashMap<Integer, HashSet<Integer>> rows;
 	private HashMap<Integer, HashSet<Integer>> cols;
 
-	public SudokuModel() {
+	public SudokuGenerator() {
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 
 		boxes = new HashMap<Integer, HashSet<Integer>>();
@@ -170,7 +170,7 @@ public class SudokuModel {
 		try {
 			File f = new File(filePath);
 			FileWriter writer = new FileWriter(f);
-			SudokuModel sm = new SudokuModel();
+			SudokuGenerator sm = new SudokuGenerator();
 			int validPuzzles = 0;
 
 			while (validPuzzles < numPuzzles) {
@@ -201,9 +201,9 @@ public class SudokuModel {
 		}
 	}
 
-	public static void main(String[] args) {
-		generateAndWritePuzzles(25, "C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test1.txt");
-	}
+//	public static void main(String[] args) {
+//		generateAndWritePuzzles(25, "C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test1.txt");
+//	}
 }
 
 class Cell {

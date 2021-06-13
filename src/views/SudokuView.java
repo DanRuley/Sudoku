@@ -13,20 +13,15 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import constants.Constants;
-import models.SudokuModel;
+import utilities.SudokuGenerator;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.LineBorder;
 
 public class SudokuView extends JFrame implements KeyListener {
 
-	public static void main(String[] args) throws InterruptedException {
-		SudokuView s = new SudokuView();
-		s.setVisible(true);
-	}
-
-	private SudokuModel model;
 	private JPanel hostPanel;
 	private JPanel gamePanel;
 	private JPanel[][] gameBox;
@@ -47,12 +42,6 @@ public class SudokuView extends JFrame implements KeyListener {
 		init();
 	}
 
-//	public SudokuView(int[][] board, int[][] initState) {
-//		this.board = board;
-//		this.boolean = initState;
-//		init();
-//	}
-
 	private void init() {
 		size = new Dimension(Constants.CELL_PIXELS * Constants.GRID_SIZE, Constants.CELL_PIXELS * Constants.GRID_SIZE);
 		this.setSize(size);
@@ -61,7 +50,7 @@ public class SudokuView extends JFrame implements KeyListener {
 		this.setBackground(Color.BLACK);
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
-		toggled = null;
+		toggled = new Cell(Constants.UNFILLED, Constants.UNFILLED, Constants.UNFILLED, false, null, this);
 		this.addKeyListener(this);
 		noteKeys = new HashMap<>();
 		int i = 1;
@@ -150,6 +139,7 @@ public class SudokuView extends JFrame implements KeyListener {
 
 		int keyCode = e.getKeyCode();
 		char key = e.getKeyChar();
+		System.out.println(keyCode + " " + key);
 
 		if (keyLock == keyCode)
 			return;
@@ -157,8 +147,6 @@ public class SudokuView extends JFrame implements KeyListener {
 		if (keyCode == KeyEvent.VK_UP || keyCode == KeyEvent.VK_DOWN || keyCode == KeyEvent.VK_RIGHT
 				|| keyCode == KeyEvent.VK_LEFT) {
 			handleArrows(keyCode);
-		} else if (toggled == null) {
-			;
 		} else if (Character.isDigit(key)) {
 			key = (char) (key - '0');
 			toggled.setDigit(key);
@@ -168,6 +156,7 @@ public class SudokuView extends JFrame implements KeyListener {
 			toggled.clearDigit();
 		}
 
+		repaintBoard();
 		keyLock = keyCode;
 
 		// Prevents Windows alert ding
@@ -205,29 +194,30 @@ public class SudokuView extends JFrame implements KeyListener {
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		System.out.println(e.getKeyCode());
 		keyLock = -1;
-	}
-
-	public void setDigit(int row, int col, int num) {
-		cells[row][col].setDigit(num);
-	}
-
-	public void clearDigit(int row, int col) {
-		cells[row][col].clearDigit();
 	}
 
 	public void setToggled(int row, int col) {
 		Cell c = cells[row][col];
 
-		if (toggled != null) {
-			toggled.setDefaultBackground();
-		}
+		toggled.setDefaultBackground();
 
 		toggled = c;
 		toggledRow = c.getRow();
 		toggledCol = c.getCol();
 		c.setBackground(Constants.SELECTED_BG);
+		repaintBoard();
 	}
 
+	private void repaintBoard() {
+		for (Cell[] row : cells) {
+			for (Cell c : row) {
+				c.repaint();
+			}
+		}
+	}
+
+	public Cell getToggled() {
+		return toggled;
+	}
 }

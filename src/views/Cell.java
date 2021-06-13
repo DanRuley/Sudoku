@@ -19,7 +19,6 @@ public class Cell extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private int row;
 	private int col;
-	private int actualNumber;
 	private int displayNumber;
 	private boolean initialNumber;
 	private HashSet<Integer> notes;
@@ -32,10 +31,9 @@ public class Cell extends JPanel {
 		this.col = col;
 		this.size = size;
 		this.initialNumber = init;
-		this.actualNumber = actualNumber;
 		this.game = game;
 
-		this.displayNumber = initialNumber ? actualNumber : -1;
+		this.displayNumber = init ? actualNumber : Constants.UNFILLED;
 
 		this.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		this.setPreferredSize(size);
@@ -49,7 +47,6 @@ public class Cell extends JPanel {
 		});
 
 		notes = new HashSet<>();
-
 	}
 
 	public int getRow() {
@@ -75,7 +72,8 @@ public class Cell extends JPanel {
 		if (initialNumber)
 			return;
 
-		displayNumber = -1;
+		displayNumber = Constants.UNFILLED;
+		;
 		if (notes.contains(num)) {
 			notes.remove(num);
 		} else {
@@ -91,7 +89,8 @@ public class Cell extends JPanel {
 			return;
 
 		notes = new HashSet<>();
-		displayNumber = -1;
+		displayNumber = Constants.UNFILLED;
+		;
 
 		repaint();
 	}
@@ -113,25 +112,32 @@ public class Cell extends JPanel {
 
 	private void drawNumber(Graphics g) {
 
-		g.setFont(Constants.NUM_FONT);
+		if (this.displayNumber == game.getToggled().displayNumber)
+			g.setFont(Constants.SELECTED_NUM_FONT);
+		else
+			g.setFont(Constants.NUM_FONT);
+
 		Rectangle2D strBounds = g.getFontMetrics().getStringBounds("" + displayNumber, g);
 		int x = (int) (this.getWidth() / 2 - strBounds.getWidth() / 2);
-		int y = (int) ((this.getHeight() / 2) + (strBounds.getHeight() / 3));
+		int y = (int) ((this.getHeight() / 2) + (strBounds.getHeight() / 4));
 		g.drawString("" + displayNumber, x, y);
-
-		System.out
-				.println("Drawing in row: " + row + ", col: " + col + "\nAt these coordinates: (" + x + ", " + y + ")");
 	}
 
 	private void drawNotes(Graphics g) {
-		System.out.println("drawing");
 		for (int i : notes) {
+
+			if (i == game.getToggled().displayNumber)
+				g.setFont(Constants.SELECTED_NOTE_FONT);
+			else
+				g.setFont(Constants.NOTE_FONT);
+
 			int row = (i - 1) / 3;
 			int col = (i - 1) % 3;
-			System.out.println("Number: " + i + ", col(x): " + col + ", row(y): " + row);
 
-			col = this.getWidth() / 6 + (col * this.getWidth() / 3) - 3;
-			row = this.getHeight() / 6 + (row * this.getHeight() / 3) + 6;
+			col = this.getWidth() / Constants.NOTE_MAGIC_VAL + (col * this.getWidth() / Constants.NOTE_MAGIC_VAL)
+					- Constants.NOTE_MAGIC_VAL;
+			row = this.getHeight() / Constants.NOTE_MAGIC_VAL + (row * this.getHeight() / Constants.NOTE_MAGIC_VAL)
+					+ Constants.NOTE_MAGIC_VAL;
 
 			g.drawString("" + i, col, row);
 		}
@@ -144,4 +150,11 @@ public class Cell extends JPanel {
 			this.setBackground(Constants.UNSELECTED_BG);
 	}
 
+	public boolean containsDigit(int num) {
+		return this.displayNumber == num || this.notes.contains(num);
+	}
+
+	public int getDisplayNumber() {
+		return displayNumber;
+	}
 }
