@@ -6,7 +6,12 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.HashMap;
+import java.util.Scanner;
+
 import constants.Constants;
 import models.SudokuModel;
 
@@ -19,8 +24,6 @@ public class SudokuView extends JFrame implements KeyListener {
 	public static void main(String[] args) throws InterruptedException {
 		SudokuView s = new SudokuView();
 		s.setVisible(true);
-		s.model.backtrack();
-
 	}
 
 	private SudokuModel model;
@@ -34,16 +37,8 @@ public class SudokuView extends JFrame implements KeyListener {
 	private HashMap<Character, Integer> noteKeys;
 	private Dimension size;
 
-	private int[][] board;// = { { 4, 9, 3, 7, 2, 6, 8, 5, 1 }, { 7, 1, 8, 3, 4, 5, 9, 2, 6 }, { 5, 6, 2,
-							// 8, 9, 1, 4, 7, 3 },
-//			{ 8, 3, 6, 2, 5, 4, 1, 9, 7 }, { 1, 5, 9, 6, 8, 7, 3, 4, 2 }, { 2, 7, 4, 9, 1, 3, 5, 6, 8 },
-//			{ 3, 2, 1, 4, 7, 9, 6, 8, 5 }, { 9, 8, 5, 1, 6, 2, 7, 3, 4 }, { 6, 4, 7, 5, 3, 8, 2, 1, 9 } };
-
-	private int[][] initState;// int[][] initState = { { 1, 1, 0, 1, 0, 0, 0, 1, 1 }, { 1, 1, 0, 1, 1, 0, 1,
-								// 1, 0 }, { 0, 1, 0, 0, 0, 0, 1, 0, 1 },
-//			{ 1, 0, 0, 1, 0, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 0, 1, 1, 0 }, { 0, 1, 0, 0, 0, 0, 0, 1, 1 },
-//			{ 1, 0, 0, 0, 0, 1, 1, 0, 1 }, { 0, 0, 0, 0, 1, 1, 0, 0, 1 }, { 0, 0, 0, 0, 0, 1, 0, 0, 0 } };
-
+	private int[][] board;
+	private boolean[][] initState;
 	private int keyLock;
 
 	private static final long serialVersionUID = 1L;
@@ -52,11 +47,11 @@ public class SudokuView extends JFrame implements KeyListener {
 		init();
 	}
 
-	public SudokuView(int[][] board, int[][] initState) {
-		this.board = board;
-		this.initState = initState;
-		init();
-	}
+//	public SudokuView(int[][] board, int[][] initState) {
+//		this.board = board;
+//		this.boolean = initState;
+//		init();
+//	}
 
 	private void init() {
 		size = new Dimension(Constants.CELL_PIXELS * Constants.GRID_SIZE, Constants.CELL_PIXELS * Constants.GRID_SIZE);
@@ -74,11 +69,12 @@ public class SudokuView extends JFrame implements KeyListener {
 			noteKeys.put(c, i++);
 		}
 
-		initState = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
+		initState = new boolean[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		cells = new Cell[Constants.GRID_SIZE][Constants.GRID_SIZE];
+		readGameBoard("C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test1.txt");
 
-		model = new SudokuModel(this);
+		// model = new SudokuModel(this);
 		makeGameBoard();
 		hostPanel.add(gamePanel, BorderLayout.CENTER);
 		keyLock = -1;
@@ -86,6 +82,28 @@ public class SudokuView extends JFrame implements KeyListener {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setContentPane(hostPanel);
 		this.pack();
+	}
+
+	private void readGameBoard(String filePath) {
+		File f = new File(filePath);
+		int r, c;
+		r = c = 0;
+		try {
+			Scanner scn = new Scanner(f);
+			for (int i = 0; i < Constants.GRID_SIZE; i++) {
+				String lineString = scn.nextLine();
+				for (int j = 0; j < lineString.length(); j += 2) {
+					board[r][c] = (lineString.charAt(j) - '0');
+					initState[r][c++] = lineString.charAt(j + 1) == '$';
+				}
+				c = 0;
+				r++;
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println("Error: file not found.");
+			e.printStackTrace();
+		}
+
 	}
 
 	private void makeGameBoard() {
@@ -105,12 +123,12 @@ public class SudokuView extends JFrame implements KeyListener {
 					for (int jj = 0; jj < Constants.BOX_SIZE; jj++) {
 						int row = i * 3 + ii;
 						int col = j * 3 + jj;
-						cells[row][col] = new Cell(row, col, board[row][col], initState[row][col] > 0,
-								Constants.CELL_SIZE, this);
+						cells[row][col] = new Cell(row, col, board[row][col], initState[row][col], Constants.CELL_SIZE,
+								this);
 
 						gameBox[i][j].add(cells[row][col]);
 
-						if (initState[row][col] > 0)
+						if (initState[row][col])
 							cells[row][col].setDigit(board[row][col]);
 					}
 				}

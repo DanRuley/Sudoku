@@ -1,10 +1,13 @@
 package models;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 
 import constants.Constants;
 import views.SudokuView;
@@ -12,18 +15,13 @@ import views.SudokuView;
 public class SudokuModel {
 
 	private int[][] board;
-	private boolean[][] givens;
 	private static Integer[] digits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 	private HashMap<Integer, HashSet<Integer>> boxes;
 	private HashMap<Integer, HashSet<Integer>> rows;
 	private HashMap<Integer, HashSet<Integer>> cols;
-	private Random rng;
-	private static int opCount = 0;
-	private SudokuView v;
 
-	public SudokuModel(SudokuView _v) {
+	public SudokuModel() {
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
-		givens = new boolean[Constants.GRID_SIZE][Constants.GRID_SIZE];
 
 		boxes = new HashMap<Integer, HashSet<Integer>>();
 		rows = new HashMap<Integer, HashSet<Integer>>();
@@ -34,9 +32,6 @@ public class SudokuModel {
 			rows.put(i, new HashSet<Integer>());
 			cols.put(i, new HashSet<Integer>());
 		}
-
-		v = _v;
-		rng = new Random();
 	}
 
 	private void clear() {
@@ -61,8 +56,7 @@ public class SudokuModel {
 		else
 			return 6 + col / 3;
 	}
-	
-	
+
 	/**
 	 * def backtrack(candidate): if find_solution(candidate): output(candidate)
 	 * return
@@ -72,7 +66,7 @@ public class SudokuModel {
 	 * place(next_candidate) # given the candidate, explore further.
 	 * backtrack(next_candidate) # backtrack remove(next_candidate)
 	 */
-	public boolean backtrack() throws InterruptedException {
+	public boolean backtrack(HashSet<Cell> disallowed) {
 
 		if (completeBoard())
 			return true;
@@ -89,7 +83,12 @@ public class SudokuModel {
 					Collections.shuffle(nums);
 
 					for (int n = 0; n < nums.size(); n++) {
+
 						int candidate = nums.get(n);
+
+						if (disallowed != null)
+							if (disallowed.contains(new Cell(r, c, candidate)))
+								continue;
 
 						// Number is not already in box/row/col
 						if (!(boxes.get(box).contains(candidate) || rows.get(r).contains(candidate)
@@ -97,16 +96,12 @@ public class SudokuModel {
 
 							// place the number
 							addCandidate(candidate, r, c, box);
-							v.setDigit(r, c, candidate);
-							Thread.sleep(100);
 
-							if (backtrack())
+							if (backtrack(disallowed))
 								return true;
 
 							// Candidate led to invalid board state ==> clear from board/sets
 							clearCandidate(candidate, r, c, box);
-							v.clearDigit(r, c);
-							Thread.sleep(100);
 						}
 					}
 					break outofloop;
@@ -119,7 +114,7 @@ public class SudokuModel {
 	private void printBoard() {
 		for (int r = 0; r < 9; r++) {
 			for (int c = 0; c < 9; c++)
-				System.out.print(board[r][c] + " ");
+				System.out.print((board[r][c] == 0 ? " " : board[r][c]) + " ");
 			System.out.println();
 		}
 		System.out.println();
@@ -139,6 +134,29 @@ public class SudokuModel {
 		cols.get(c).remove(candidate);
 	}
 
+	/*
+	 * Assumes backtracking has been run once
+	 */
+	private boolean clearAndCheck(int toDel) {
+
+		HashSet<Cell> cleared = new HashSet<Cell>();
+		ArrayList<Cell> filled = new ArrayList<>();
+		for (int r = 0; r < Constants.GRID_SIZE; r++)
+			for (int c = 0; c < Constants.GRID_SIZE; c++)
+				filled.add(new Cell(r, c, board[r][c]));
+
+		Collections.shuffle(filled);
+		for (int i = 0; i < toDel; i++) {
+			Cell rngDelete = filled.remove(filled.size() - 1);
+			cleared.add(rngDelete);
+			clearCandidate(rngDelete.val, rngDelete.r, rngDelete.c, getBoxNumber(rngDelete.r, rngDelete.c));
+			if (backtrack(cleared))
+				return false;
+		}
+
+		return true;
+	}
+
 	private boolean completeBoard() {
 		for (int i = 0; i < Constants.GRID_SIZE; i++) {
 			if (!(boxes.get(i).size() == Constants.GRID_SIZE && rows.get(i).size() == Constants.GRID_SIZE
@@ -148,60 +166,73 @@ public class SudokuModel {
 		return true;
 	}
 
-	private boolean generateSmoothBrainSudoku() {
+	public static void generateAndWritePuzzles(int numPuzzles, String filePath) {
+		try {
+			File f = new File(filePath);
+			FileWriter writer = new FileWriter(f);
+			SudokuModel sm = new SudokuModel();
+			int validPuzzles = 0;
 
-		int placed = 0;
-		Integer[] digits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-		ArrayList<Integer> copy;
-		clear();
+			while (validPuzzles < numPuzzles) {
+				sm.clear();
+				sm.backtrack(null);
+				int[][] completeBoard = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 
-		for (int r = 0; r < Constants.GRID_SIZE; r++) {
-			for (int c = 0; c < Constants.GRID_SIZE; c++) {
-				int box = getBoxNumber(r, c);
-				copy = new ArrayList<>();
-				Collections.addAll(copy, digits);
+				for (int r = 0; r < completeBoard.length; r++)
+					completeBoard[r] = Arrays.copyOf(sm.board[r], Constants.GRID_SIZE);
 
-				int candidate = copy.get(rng.nextInt(copy.size()));
-				opCount++;
-				// The sieve
-				while (boxes.get(box).contains(candidate) || rows.get(r).contains(candidate)
-						|| cols.get(c).contains(candidate)) {
-					opCount++;
-					copy.remove((Integer) candidate);
-					try {
-						candidate = copy.get(rng.nextInt(copy.size()));
-					} catch (Exception e) {
-						return false;
+				if (sm.clearAndCheck(45)) {
+					int[][] puzzleBoard = sm.board;
+					for (int r = 0; r < Constants.GRID_SIZE; r++) {
+						for (int c = 0; c < Constants.GRID_SIZE; c++) {
+							writer.write(completeBoard[r][c] + (puzzleBoard[r][c] == 0 ? "x" : "$"));
+						}
+						writer.write("\n");
 					}
-				}
-
-				// We're through the sieve, the candidate is valid in this (r,c)
-				boxes.get(box).add(candidate);
-				rows.get(r).add(candidate);
-				cols.get(c).add(candidate);
-				board[r][c] = candidate;
+					writer.write("\n");
+					validPuzzles++;
+				} else
+					System.out.println("bad");
 			}
+			writer.close();
+		} catch (IOException e) {
+			System.out.println("Error: file not found");
+			e.printStackTrace();
 		}
-
-		return true;
 	}
 
-	public static void main(String[] args) throws InterruptedException {
-//
-//		int[][] x = new int[9][9];
-//		for (int i = 0; i < 81; i++) {
-//			x[i / 9][i % 9] = 1;
-//		}
-//
-//		for (int i = 0; i < 10; i++) {
-//			boolean b = s.generateSmoothBrainSudoku();
-//			while (!b) {
-//				b = s.generateSmoothBrainSudoku();
-//				System.out.println(opCount);
-//			}
-//			SudokuView sv = new SudokuView(s.board, x);
-//			sv.setVisible(true);
-//			Thread.sleep(500);
-//		}
+	public static void main(String[] args) {
+		generateAndWritePuzzles(25, "C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test1.txt");
+	}
+}
+
+class Cell {
+	public int r;
+	public int c;
+	public int val;
+
+	public Cell(int _r, int _c, int _val) {
+		r = _r;
+		c = _c;
+		val = _val;
+	}
+
+	@Override
+	public int hashCode() {
+		return r * Constants.GRID_SIZE + c;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (!(other instanceof Cell))
+			return false;
+
+		Cell o = (Cell) other;
+		return r == o.r && c == o.c && val == o.val;
+	}
+
+	@Override
+	public String toString() {
+		return "(" + r + ", " + c + "): " + val;
 	}
 }
