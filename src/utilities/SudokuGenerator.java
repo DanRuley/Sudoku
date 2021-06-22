@@ -22,7 +22,23 @@ public class SudokuGenerator {
 
 	public SudokuGenerator() {
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
+		init();
+	}
 
+	public SudokuGenerator(int[][] _board) {
+		board = _board;
+		init();
+		for (int r = 0; r < board.length; r++)
+			for (int c = 0; c < board.length; c++) {
+				if (board[r][c] > 0) {
+					boxes.get(getBoxNumber(r, c)).add(board[r][c]);
+					rows.get(r).add(board[r][c]);
+					cols.get(c).add(board[r][c]);
+				}
+			}
+	}
+
+	private void init() {
 		boxes = new HashMap<Integer, HashSet<Integer>>();
 		rows = new HashMap<Integer, HashSet<Integer>>();
 		cols = new HashMap<Integer, HashSet<Integer>>();
@@ -57,6 +73,14 @@ public class SudokuGenerator {
 			return 6 + col / 3;
 	}
 
+	public int[][] solve() {
+
+		if (backtrack(null))
+			return board;
+		else
+			throw new IllegalArgumentException("No solution found");
+	}
+
 	/**
 	 * def backtrack(candidate): if find_solution(candidate): output(candidate)
 	 * return
@@ -66,7 +90,7 @@ public class SudokuGenerator {
 	 * place(next_candidate) # given the candidate, explore further.
 	 * backtrack(next_candidate) # backtrack remove(next_candidate)
 	 */
-	public boolean backtrack(HashSet<Cell> disallowed) {
+	public boolean backtrack(Cell disallowed) {
 
 		if (completeBoard())
 			return true;
@@ -87,7 +111,7 @@ public class SudokuGenerator {
 						int candidate = nums.get(n);
 
 						if (disallowed != null)
-							if (disallowed.contains(new Cell(r, c, candidate)))
+							if (disallowed.equals(new Cell(r, c, candidate)))
 								continue;
 
 						// Number is not already in box/row/col
@@ -150,7 +174,7 @@ public class SudokuGenerator {
 			Cell rngDelete = filled.remove(filled.size() - 1);
 			cleared.add(rngDelete);
 			clearCandidate(rngDelete.val, rngDelete.r, rngDelete.c, getBoxNumber(rngDelete.r, rngDelete.c));
-			if (backtrack(cleared))
+			if (backtrack(rngDelete))
 				return false;
 		}
 
@@ -166,8 +190,11 @@ public class SudokuGenerator {
 		return true;
 	}
 
+	
+	//Todo: record time it took to verify puzzle uniqueness, does it correlate with puzzle difficulty?
 	public static void generateAndWritePuzzles(int numPuzzles, String filePath) {
 		try {
+			int hiddenDigits = 50;
 			File f = new File(filePath);
 			FileWriter writer = new FileWriter(f);
 			SudokuGenerator sm = new SudokuGenerator();
@@ -181,18 +208,21 @@ public class SudokuGenerator {
 				for (int r = 0; r < completeBoard.length; r++)
 					completeBoard[r] = Arrays.copyOf(sm.board[r], Constants.GRID_SIZE);
 
-				if (sm.clearAndCheck(45)) {
+				
+				if (sm.clearAndCheck(hiddenDigits)) {
 					int[][] puzzleBoard = sm.board;
 					for (int r = 0; r < Constants.GRID_SIZE; r++) {
 						for (int c = 0; c < Constants.GRID_SIZE; c++) {
-							writer.write(completeBoard[r][c] + (puzzleBoard[r][c] == 0 ? "x" : "$"));
+							writer.write((puzzleBoard[r][c] == 0 ? "." : "" + completeBoard[r][c]));
 						}
-						writer.write("\n");
 					}
 					writer.write("\n");
+					for (int r = 0; r < 9; r++)
+						for (int c = 0; c < 9; c++)
+							System.out.print(puzzleBoard[r][c] == 0 ? "." : "" + completeBoard[r][c]);
+					System.out.println();
 					validPuzzles++;
-				} else
-					System.out.println("bad");
+				}
 			}
 			writer.close();
 		} catch (IOException e) {
@@ -201,9 +231,42 @@ public class SudokuGenerator {
 		}
 	}
 
-//	public static void main(String[] args) {
-//		generateAndWritePuzzles(25, "C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test1.txt");
-//	}
+	public static void main(String[] args) {
+
+		Thread t1 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				generateAndWritePuzzles(100,
+						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test5.txt");
+			}
+		});
+		Thread t2 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				generateAndWritePuzzles(100,
+						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test6.txt");
+			}
+		});
+		Thread t3 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				generateAndWritePuzzles(100,
+						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test7.txt");
+			}
+		});
+		Thread t4 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				generateAndWritePuzzles(100,
+						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test8.txt");
+			}
+		});
+
+		t1.start();
+		t2.start();
+		t3.start();
+		t4.start();
+	}
 }
 
 class Cell {
