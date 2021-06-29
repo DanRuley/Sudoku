@@ -4,20 +4,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.Scanner;
 
 import constants.Constants;
 import utilities.KeyHandler;
@@ -25,10 +19,8 @@ import utilities.MoveManager;
 import utilities.MoveType;
 import utilities.SudokuGenerator;
 
-import javax.net.ssl.KeyManager;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import javax.swing.border.LineBorder;
 
 public class SudokuView extends JFrame {
@@ -222,7 +214,7 @@ public class SudokuView extends JFrame {
 	public void setToggled(int row, int col) {
 		Cell c = cells[row][col];
 
-		if(toggled != null)
+		if (toggled != null)
 			toggled.setDefaultBackground();
 
 		toggled = c;
