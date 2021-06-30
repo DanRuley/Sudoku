@@ -25,18 +25,18 @@ public class Cell extends JPanel {
 	private boolean isInitialNumber;
 	private boolean[] notes;
 	private Dimension size;
-	private SudokuView game;
+	private SudokuGame game;
 	private Color numColor;
-	private boolean conflicted;
+	// private boolean conflicted;
 
-	public Cell(int _row, int _col, int actualNumber, boolean _init, Dimension _size, SudokuView _game) {
+	public Cell(int _row, int _col, int actualNumber, boolean _init, Dimension _size, SudokuGame _game) {
 
 		row = _row;
 		col = _col;
 		size = _size;
 		isInitialNumber = _init;
 		game = _game;
-		conflicted = false;
+		// conflicted = false;
 
 		if (isInitialNumber) {
 			displayNumber = actualNumber;
@@ -153,12 +153,12 @@ public class Cell extends JPanel {
 		return this.row * Constants.GRID_SIZE + this.col;
 	}
 
-	public void setConflicted(boolean conflict) {
-		if (conflict)
-			numColor = Color.red;
-		else
-			numColor = isInitialNumber ? Color.black : Constants.FILLED_NUM;
-	}
+//	public void setConflicted(boolean conflict) {
+//		if (conflict)
+//			numColor = Color.red;
+//		else
+//			numColor = isInitialNumber ? Color.black : Constants.FILLED_NUM;
+//	}
 
 	@Override
 	public void paintComponent(Graphics g) {
@@ -186,7 +186,10 @@ public class Cell extends JPanel {
 			this.setBackground(Constants.UNSELECTED_BG);
 		}
 
-		g.setColor(numColor);
+		if (game.isConflicted(this))
+			g.setColor(Color.red);
+		else
+			g.setColor(numColor);
 
 		Rectangle2D strBounds = g.getFontMetrics().getStringBounds("" + displayNumber, g);
 		int x = (int) (this.getWidth() / 2 - strBounds.getWidth() / 2);

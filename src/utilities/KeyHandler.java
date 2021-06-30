@@ -5,7 +5,7 @@ import java.awt.event.KeyListener;
 import java.util.HashMap;
 
 import constants.Constants;
-import views.SudokuView;
+import views.SudokuGame;
 import views.Cell;
 
 /**
@@ -16,14 +16,16 @@ import views.Cell;
  */
 public class KeyHandler implements KeyListener {
 
-	private SudokuView game;
+	private SudokuGame game;
 	private HashMap<Character, Integer> noteKeys;
 	private int keyLock;
+	private MoveManager moveManager;
 
-	public KeyHandler(SudokuView _game) {
+	public KeyHandler(SudokuGame _game, MoveManager _moveManager) {
 		game = _game;
 		keyLock = Constants.UNFILLED;
 		noteKeys = new HashMap<>();
+		moveManager = _moveManager;
 
 		int n = 1;
 		for (Character c : new char[] { '!', '@', '#', '$', '%', '^', '&', '*', '(' }) {
@@ -42,6 +44,10 @@ public class KeyHandler implements KeyListener {
 
 		Cell toggled = game.getToggled();
 
+		// The key event is not necessarily an actual move (e.g. arrows or other
+		// irrelevant keys)
+		Move move = null;
+
 		if (keyCode == KeyEvent.VK_UP || keyCode == KeyEvent.VK_DOWN || keyCode == KeyEvent.VK_RIGHT
 				|| keyCode == KeyEvent.VK_LEFT) {
 			handleArrows(keyCode, toggled);
@@ -49,12 +55,14 @@ public class KeyHandler implements KeyListener {
 			return;
 		} else if (Character.isDigit(key)) {
 			key = (char) (key - '0');
-			// moveManager.makeMove(toggled, MoveType.place, key);
 			toggled.setDigit(key);
+			move = new Move(toggled, MoveType.place, (int) key);
 		} else if (noteKeys.containsKey(key)) {
 			toggled.setNote(noteKeys.get(key));
+			move = new Move(toggled, MoveType.notate, noteKeys.get(key));
 		} else if (keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE) {
 			toggled.clearDigit();
+			move = new Move(toggled, MoveType.delete, null);
 		} else {
 			return;
 		}
@@ -63,9 +71,13 @@ public class KeyHandler implements KeyListener {
 		// Prevents Windows alert ding
 		e.consume();
 
+		if (move != null)
+			moveManager.processMove(move);
+
 		game.processMove();
 	}
 
+	// arrow handling merely changes toggled keys, no need to invoke a move
 	private void handleArrows(int code, Cell toggled) {
 
 		int toggledRow, toggledCol;

@@ -13,8 +13,12 @@ public class MoveManager {
 	public MoveManager() {
 		undoStack = new Stack<Move>();
 		redoStack = new Stack<Move>();
-	}
+	}                                                       
 
+	public void processMove(Move move) {
+		
+	}
+	
 	public Move undo() {
 		if (undoStack.size() == 0)
 			return null;

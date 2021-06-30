@@ -16,14 +16,13 @@ import java.util.Random;
 import constants.Constants;
 import utilities.KeyHandler;
 import utilities.MoveManager;
-import utilities.MoveType;
 import utilities.SudokuGenerator;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.LineBorder;
 
-public class SudokuView extends JFrame {
+public class SudokuGame extends JFrame {
 
 	private JPanel hostPanel;
 	private JPanel gamePanel;
@@ -31,9 +30,7 @@ public class SudokuView extends JFrame {
 	private Cell[][] cells;
 	private Cell toggled;
 
-	private HashMap<Integer, HashSet<Cell>> rows;
-	private HashMap<Integer, HashSet<Cell>> cols;
-	private HashMap<Integer, HashSet<Cell>> boxes;
+	private HashSet<Cell> conflicts;
 	private Dimension size;
 	private KeyHandler keyHandler;
 	private MoveManager moveManager;
@@ -43,7 +40,7 @@ public class SudokuView extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
-	public SudokuView() {
+	public SudokuGame() {
 		init();
 	}
 
@@ -56,26 +53,17 @@ public class SudokuView extends JFrame {
 		this.setBackground(Color.BLACK);
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
-		toggled = null;// new Cell(Constants.UNFILLED, Constants.UNFILLED, Constants.UNFILLED, false,
-						// null, this);
-		keyHandler = new KeyHandler(this);
+		toggled = null;
+
+		keyHandler = new KeyHandler(this, moveManager);
+		conflicts = new HashSet<>();
 
 		this.addKeyListener(keyHandler);
-
-		boxes = new HashMap<Integer, HashSet<Cell>>();
-		rows = new HashMap<Integer, HashSet<Cell>>();
-		cols = new HashMap<Integer, HashSet<Cell>>();
-
-		for (int i = 0; i < Constants.GRID_SIZE; i++) {
-			boxes.put(i, new HashSet<Cell>());
-			rows.put(i, new HashSet<Cell>());
-			cols.put(i, new HashSet<Cell>());
-		}
 
 		initState = new boolean[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		cells = new Cell[Constants.GRID_SIZE][Constants.GRID_SIZE];
-		readGameBoard(4);
+		readGameBoard(3);
 
 		for (int r = 0; r < board.length; r++)
 			for (int c = 0; c < board[0].length; c++)
@@ -84,6 +72,7 @@ public class SudokuView extends JFrame {
 		makeGameBoard();
 		hostPanel.add(gamePanel, BorderLayout.CENTER);
 
+		this.setResizable(false);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setContentPane(hostPanel);
 		this.pack();
@@ -148,15 +137,11 @@ public class SudokuView extends JFrame {
 					for (int jj = 0; jj < Constants.BOX_SIZE; jj++) {
 						int row = i * Constants.BOX_SIZE + ii;
 						int col = j * Constants.BOX_SIZE + jj;
-						int box = getBoxNumber(row, col);
 
 						Cell current = new Cell(row, col, board[row][col], initState[row][col], Constants.CELL_SIZE,
 								this);
 
 						cells[row][col] = current;
-						rows.get(row).add(current);
-						cols.get(col).add(current);
-						boxes.get(box).add(current);
 
 						gameBox[i][j].add(current);
 
@@ -177,40 +162,89 @@ public class SudokuView extends JFrame {
 		repaintBoard();
 	}
 
+	/**
+	 * A given cell is conflicted if it contains the same digit as another cell in
+	 * its row, column or box. This method checks the status of the Cells in the
+	 * conflicted set to see if they are still in conflict. It also checks the
+	 * status of the toggled cell (which would have been affected by the previous
+	 * move) and adds any conflicts to the set.
+	 */
 	private void checkAndUpdateConflicts() {
 
-		HashSet<Cell> conflicts = new HashSet<Cell>();
+		HashSet<Cell> stillConflicted = new HashSet<Cell>();
 
-		for (int i = 0; i < Constants.GRID_SIZE; i++) {
-			conflicts.addAll(checkRowColOrBoxConflicts(rows.get(i)));
-			conflicts.addAll(checkRowColOrBoxConflicts(cols.get(i)));
-			conflicts.addAll(checkRowColOrBoxConflicts(boxes.get(i)));
-		}
+		// Process conflicted cells from last turn and keep the ones that are still in
+		// conflict
+		for (Cell c : conflicts) {
 
-		for (Cell[] row : cells)
-			for (Cell c : row)
-				c.setConflicted(conflicts.contains(c));
-	}
-
-	private HashSet<Cell> checkRowColOrBoxConflicts(HashSet<Cell> cells) {
-		HashSet<Cell> conflicts = new HashSet<Cell>();
-		HashSet<Integer> digits = new HashSet<Integer>();
-		HashSet<Integer> dupes = new HashSet<Integer>();
-
-		for (Cell c : cells) {
-			if (c.getDisplayNumber() < 0)
+			if (stillConflicted.contains(c))
 				continue;
-			else if (!digits.add(c.getDisplayNumber())) {
-				dupes.add(c.getDisplayNumber());
-			}
-		}
-		for (Cell c : cells)
-			if (dupes.contains(c.getDisplayNumber()))
-				conflicts.add(c);
 
-		return conflicts;
+			stillConflicted.addAll(getRowColBoxConflicts(c));
+		}
+
+		// Check the current toggled cell for conflicts
+		stillConflicted.addAll(getRowColBoxConflicts(toggled));
+
+		conflicts = stillConflicted;
 	}
 
+	/**
+	 * Slightly unwieldy method to check conflicts with the provided Cell. This
+	 * method finds any Cells with the same digit as the provided Cell and adds
+	 * them, along with the given Cell to a set.
+	 * 
+	 * @param toCheck - Cell to check
+	 * @return dupes - set of Cells which are in conflict (contain the same digit
+	 *         and are in the same row, column, or box).
+	 */
+	private HashSet<Cell> getRowColBoxConflicts(Cell toCheck) {
+
+		HashSet<Cell> dupes = new HashSet<>();
+		int row = toCheck.getRow();
+		int col = toCheck.getCol();
+		int box = getBoxNumber(toCheck.getRow(), toCheck.getCol());
+		int boxRowStart = (box / Constants.BOX_SIZE) * Constants.BOX_SIZE;
+		int boxColStart = (box % Constants.BOX_SIZE) * Constants.BOX_SIZE;
+		int digit;
+
+		// check row
+		for (int i = 0; i < Constants.GRID_SIZE; i++) {
+			digit = cells[row][i].getDisplayNumber();
+			if (cells[row][i] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
+				dupes.add(cells[row][i]);
+		}
+
+		// check col
+		for (int i = 0; i < Constants.GRID_SIZE; i++) {
+			digit = cells[i][col].getDisplayNumber();
+			if (cells[i][col] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
+				dupes.add(cells[i][col]);
+		}
+
+		// check box
+		for (int i = boxRowStart; i < boxRowStart + Constants.BOX_SIZE; i++)
+			for (int j = boxColStart; j < boxColStart + Constants.BOX_SIZE; j++) {
+				digit = cells[i][j].getDisplayNumber();
+				if (cells[i][j] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
+					dupes.add(cells[i][j]);
+			}
+
+		// If any conflicts were found, we also need to add the provided cell :)
+		if (dupes.size() > 0)
+			dupes.add(toCheck);
+
+		return dupes;
+	}
+
+	/**
+	 * Reset the background of the old toggled cell. Then, set the toggled cell to
+	 * the one at the provided (row,col) position. Then set its background to
+	 * selected.
+	 * 
+	 * @param row - new toggled cell row
+	 * @param col - new toggled cell column
+	 */
 	public void setToggled(int row, int col) {
 		Cell c = cells[row][col];
 
@@ -221,6 +255,9 @@ public class SudokuView extends JFrame {
 		c.setBackground(Constants.SELECTED_BG);
 	}
 
+	/**
+	 * Tell of the cells in the board to repaint.
+	 */
 	public void repaintBoard() {
 		for (Cell[] row : cells) {
 			for (Cell c : row) {
@@ -229,10 +266,23 @@ public class SudokuView extends JFrame {
 		}
 	}
 
+	/**
+	 * Get the currently toggled cell (This is the cell which will be affected by
+	 * any moves)
+	 * 
+	 * @return the toggled cell
+	 */
 	public Cell getToggled() {
 		return toggled;
 	}
 
+	/**
+	 * Translate a (row, col) coordinate to its given box in the grid
+	 * 
+	 * @param row
+	 * @param col
+	 * @return The box that the given (row, col) resides in.
+	 */
 	private static int getBoxNumber(int row, int col) {
 		if (row >= 0 && row < 3)
 			return col / 3;
@@ -242,4 +292,13 @@ public class SudokuView extends JFrame {
 			return 6 + col / 3;
 	}
 
+	/**
+	 * Returns the conflict status of a given cell
+	 * 
+	 * @param cell - the cell to check
+	 * @return true if the cell is in conflict with another cell, false otherwise
+	 */
+	public boolean isConflicted(Cell cell) {
+		return conflicts.contains(cell);
+	}
 }

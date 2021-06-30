@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import constants.Constants;
-import views.SudokuView;
 
 public class SudokuGenerator {
 

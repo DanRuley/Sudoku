@@ -11,7 +11,7 @@ public class Sudoku {
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				SudokuView s = new SudokuView();
+				SudokuGame s = new SudokuGame();
 				s.setVisible(true);
 			}
 		});
