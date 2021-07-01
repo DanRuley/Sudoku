@@ -29,6 +29,7 @@ public class SudokuGame extends JFrame {
 	private JPanel[][] gameBox;
 	private Cell[][] cells;
 	private Cell toggled;
+	private Random rng;
 
 	private HashSet<Cell> conflicts;
 	private Dimension size;
@@ -45,7 +46,7 @@ public class SudokuGame extends JFrame {
 	}
 
 	private void init() {
-		moveManager = new MoveManager();
+		moveManager = new MoveManager(this);
 		size = new Dimension(Constants.CELL_PIXELS * Constants.GRID_SIZE, Constants.CELL_PIXELS * Constants.GRID_SIZE);
 		this.setSize(size);
 		this.setMaximumSize(size);
@@ -54,6 +55,7 @@ public class SudokuGame extends JFrame {
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
 		toggled = null;
+		rng = new Random();
 
 		keyHandler = new KeyHandler(this, moveManager);
 		conflicts = new HashSet<>();
@@ -162,6 +164,22 @@ public class SudokuGame extends JFrame {
 		repaintBoard();
 	}
 
+	private void partyTime() {
+		for (int r = 0; r < Constants.GRID_SIZE; r++)
+			for (int c = 0; c < Constants.GRID_SIZE; c++) {
+				cells[r][c].setBackground(Color.cyan);
+			}
+
+	}
+
+	private boolean gameComplete() {
+		for (int r = 0; r < Constants.GRID_SIZE; r++)
+			for (int c = 0; c < Constants.GRID_SIZE; c++)
+				if (cells[r][c].getDigit() != board[r][c])
+					return false;
+		return true;
+	}
+
 	/**
 	 * A given cell is conflicted if it contains the same digit as another cell in
 	 * its row, column or box. This method checks the status of the Cells in the
@@ -201,6 +219,7 @@ public class SudokuGame extends JFrame {
 	private HashSet<Cell> getRowColBoxConflicts(Cell toCheck) {
 
 		HashSet<Cell> dupes = new HashSet<>();
+		Cell currentCell;
 		int row = toCheck.getRow();
 		int col = toCheck.getCol();
 		int box = getBoxNumber(toCheck.getRow(), toCheck.getCol());
@@ -210,24 +229,27 @@ public class SudokuGame extends JFrame {
 
 		// check row
 		for (int i = 0; i < Constants.GRID_SIZE; i++) {
-			digit = cells[row][i].getDisplayNumber();
-			if (cells[row][i] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
-				dupes.add(cells[row][i]);
+			currentCell = cells[row][i];
+			digit = currentCell.getDigit();
+			if (currentCell != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDigit())
+				dupes.add(currentCell);
 		}
 
 		// check col
 		for (int i = 0; i < Constants.GRID_SIZE; i++) {
-			digit = cells[i][col].getDisplayNumber();
-			if (cells[i][col] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
-				dupes.add(cells[i][col]);
+			currentCell = cells[i][col];
+			digit = currentCell.getDigit();
+			if (currentCell != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDigit())
+				dupes.add(currentCell);
 		}
 
 		// check box
 		for (int i = boxRowStart; i < boxRowStart + Constants.BOX_SIZE; i++)
 			for (int j = boxColStart; j < boxColStart + Constants.BOX_SIZE; j++) {
-				digit = cells[i][j].getDisplayNumber();
-				if (cells[i][j] != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDisplayNumber())
-					dupes.add(cells[i][j]);
+				currentCell = cells[i][j];
+				digit = currentCell.getDigit();
+				if (currentCell != toCheck && digit != Constants.UNFILLED && digit == toCheck.getDigit())
+					dupes.add(currentCell);
 			}
 
 		// If any conflicts were found, we also need to add the provided cell :)
@@ -301,4 +323,51 @@ public class SudokuGame extends JFrame {
 	public boolean isConflicted(Cell cell) {
 		return conflicts.contains(cell);
 	}
+
+	public HashSet<Integer> getListOfAffectedNoteCells(Cell target, Integer digit) {
+		HashSet<Integer> affectedNoteCells = new HashSet<>();
+		Cell currentCell;
+		int row = target.getRow();
+		int col = target.getCol();
+		int box = getBoxNumber(target.getRow(), target.getCol());
+		int boxRowStart = (box / Constants.BOX_SIZE) * Constants.BOX_SIZE;
+		int boxColStart = (box % Constants.BOX_SIZE) * Constants.BOX_SIZE;
+
+		// check row
+		for (int i = 0; i < Constants.GRID_SIZE; i++) {
+			currentCell = cells[row][i];
+			if (currentCell != target && currentCell.isNotated(digit)) {
+				affectedNoteCells.add(row * Constants.GRID_SIZE + i);
+			}
+		}
+
+		// check col
+		for (int i = 0; i < Constants.GRID_SIZE; i++) {
+			currentCell = cells[i][col];
+			if (currentCell != target && currentCell.isNotated(digit)) {
+				affectedNoteCells.add(i * Constants.GRID_SIZE + col);
+			}
+		}
+
+		// check box
+		for (int i = boxRowStart; i < boxRowStart + Constants.BOX_SIZE; i++)
+			for (int j = boxColStart; j < boxColStart + Constants.BOX_SIZE; j++) {
+				currentCell = cells[i][j];
+				if (currentCell != target && currentCell.isNotated(digit)) {
+					affectedNoteCells.add(i * Constants.GRID_SIZE + j);
+				}
+			}
+
+		return affectedNoteCells;
+	}
+
+	public void setNotesInSet(HashSet<Integer> sideEffects, Integer digit) {
+		for (int coord : sideEffects) {
+			int r = coord / Constants.GRID_SIZE;
+			int c = coord % Constants.GRID_SIZE;
+			cells[r][c].setNote(digit);
+		}
+
+	}
+
 }

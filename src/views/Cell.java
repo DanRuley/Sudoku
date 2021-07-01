@@ -27,7 +27,7 @@ public class Cell extends JPanel {
 	private Dimension size;
 	private SudokuGame game;
 	private Color numColor;
-	// private boolean conflicted;
+	private state cellState;
 
 	public Cell(int _row, int _col, int actualNumber, boolean _init, Dimension _size, SudokuGame _game) {
 
@@ -35,6 +35,12 @@ public class Cell extends JPanel {
 		col = _col;
 		size = _size;
 		isInitialNumber = _init;
+
+		if (_init)
+			cellState = state.given;
+		else
+			cellState = state.empty;
+
 		game = _game;
 		// conflicted = false;
 
@@ -67,72 +73,58 @@ public class Cell extends JPanel {
 		notes = new boolean[10];
 	}
 
-	public int getRow() {
-		return row;
-	}
-
-	public int getCol() {
-		return col;
-	}
-
 	public void setDigit(int num) {
-		// Cannot change a given digit cell.
-		if (isInitialNumber)
-			return;
 
 		// faster than allocating new arr
 		for (int i = 0; i < notes.length; i++)
 			notes[i] = false;
 
 		this.displayNumber = num;
-		repaint();
+
+		cellState = state.filled;
+
+		// repaint();
 	}
 
 	public void setNote(int num) {
-		// Cannot change a given digit cell
-		if (isInitialNumber)
-			return;
 
 		displayNumber = Constants.UNFILLED;
-		;
+
 		if (notes[num]) {
 			notes[num] = false;
+			notes[0] = false;
+
+			for (int i = 1; i < notes.length; i++)
+				notes[0] = notes[0] || notes[i];
+
 		} else {
 			notes[0] = true;
 			notes[num] = true;
 		}
-		repaint();
+
+		if (notes[0])
+			cellState = state.notated;
+		else
+			cellState = state.empty;
+
+		// repaint();
 	}
 
-	public void clearDigit() {
-
-		// Deletes on a given digit should have no effect
-		if (isInitialNumber)
-			return;
+	public void clearCell() {
 
 		for (int i = 0; i < notes.length; i++)
 			notes[i] = false;
 
 		displayNumber = Constants.UNFILLED;
 
-		repaint();
+		cellState = state.empty;
+
+		// repaint();
 	}
 
 	@Override
 	public Dimension getPreferredSize() {
 		return size;
-	}
-
-	public void setDefaultBackground() {
-		this.setBackground(Constants.UNSELECTED_BG);
-	}
-
-	public boolean containsDigit(int num) {
-		return this.displayNumber == num || this.notes[num];
-	}
-
-	public int getDisplayNumber() {
-		return displayNumber;
 	}
 
 	@Override
@@ -153,13 +145,6 @@ public class Cell extends JPanel {
 		return this.row * Constants.GRID_SIZE + this.col;
 	}
 
-//	public void setConflicted(boolean conflict) {
-//		if (conflict)
-//			numColor = Color.red;
-//		else
-//			numColor = isInitialNumber ? Color.black : Constants.FILLED_NUM;
-//	}
-
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
@@ -169,9 +154,9 @@ public class Cell extends JPanel {
 			g2d.setRenderingHints(Constants.DESKTOP_HINTS);
 		}
 
-		if (notes[0])
+		if (cellState == state.notated)
 			drawNotes(g2d);
-		else if (displayNumber > 0)
+		else if (cellState == state.filled || cellState == state.given)
 			drawNumber(g2d);
 	}
 
@@ -200,24 +185,71 @@ public class Cell extends JPanel {
 	private void drawNotes(Graphics2D g) {
 
 		for (int i = 1; i < 10; i++) {
-			if (!notes[i])
-				continue;
+			if (notes[i]) {
 
-			if (i == game.getToggled().displayNumber)
-				g.setFont(Constants.SELECTED_NOTE_FONT);
-			else
-				g.setFont(Constants.NOTE_FONT);
+				if (i == game.getToggled().displayNumber)
+					g.setFont(Constants.SELECTED_NOTE_FONT);
+				else
+					g.setFont(Constants.NOTE_FONT);
 
-			int row = (i - 1) / 3;
-			int col = (i - 1) % 3;
+				int row = (i - 1) / 3;
+				int col = (i - 1) % 3;
 
-			col = this.getWidth() / Constants.NOTE_MAGIC_VAL + (col * this.getWidth() / Constants.NOTE_MAGIC_VAL)
-					- Constants.NOTE_MAGIC_VAL - 1;
-			row = this.getHeight() / Constants.NOTE_MAGIC_VAL + (row * this.getHeight() / Constants.NOTE_MAGIC_VAL)
-					+ Constants.NOTE_MAGIC_VAL + 2;
+				col = this.getWidth() / Constants.NOTE_MAGIC_VAL + (col * this.getWidth() / Constants.NOTE_MAGIC_VAL)
+						- Constants.NOTE_MAGIC_VAL - 1;
+				row = this.getHeight() / Constants.NOTE_MAGIC_VAL + (row * this.getHeight() / Constants.NOTE_MAGIC_VAL)
+						+ Constants.NOTE_MAGIC_VAL + 2;
 
-			g.drawString("" + i, col, row);
+				g.drawString("" + i, col, row);
+			}
 		}
 	}
 
+	public boolean isNotated(int digit) {
+		return notes[digit];
+	}
+
+	public boolean isInitialDigit() {
+		return isInitialNumber;
+	}
+
+	public boolean[] getNotes() {
+		return notes;
+	}
+
+	public boolean isEmpty() {
+		return !notes[0] && displayNumber == Constants.UNFILLED;
+	}
+
+	public boolean isNotated() {
+		return notes[0];
+	}
+
+	public void setDefaultBackground() {
+		this.setBackground(Constants.UNSELECTED_BG);
+	}
+
+	public boolean containsDigit(int num) {
+		return this.displayNumber == num || this.notes[num];
+	}
+
+	public int getDigit() {
+		return displayNumber;
+	}
+
+	public int getRow() {
+		return row;
+	}
+
+	public int getCol() {
+		return col;
+	}
+
+	public enum state {
+		empty, given, filled, notated
+	}
+
+	public state getState() {
+		return cellState;
+	}
 }

@@ -193,7 +193,7 @@ public class SudokuGenerator {
 	//Todo: record time it took to verify puzzle uniqueness, does it correlate with puzzle difficulty?
 	public static void generateAndWritePuzzles(int numPuzzles, String filePath) {
 		try {
-			int hiddenDigits = 50;
+			int hiddenDigits = 1;
 			File f = new File(filePath);
 			FileWriter writer = new FileWriter(f);
 			SudokuGenerator sm = new SudokuGenerator();
@@ -232,39 +232,40 @@ public class SudokuGenerator {
 
 	public static void main(String[] args) {
 
-		Thread t1 = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				generateAndWritePuzzles(100,
-						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test5.txt");
-			}
-		});
-		Thread t2 = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				generateAndWritePuzzles(100,
-						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test6.txt");
-			}
-		});
-		Thread t3 = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				generateAndWritePuzzles(100,
-						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test7.txt");
-			}
-		});
-		Thread t4 = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				generateAndWritePuzzles(100,
-						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test8.txt");
-			}
-		});
-
-		t1.start();
-		t2.start();
-		t3.start();
-		t4.start();
+		generateAndWritePuzzles(1, "C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\rated0.txt");
+//		Thread t1 = new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				generateAndWritePuzzles(100,
+//						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test5.txt");
+//			}
+//		});
+//		Thread t2 = new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				generateAndWritePuzzles(100,
+//						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test6.txt");
+//			}
+//		});
+//		Thread t3 = new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				generateAndWritePuzzles(100,
+//						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test7.txt");
+//			}
+//		});
+//		Thread t4 = new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				generateAndWritePuzzles(100,
+//						"C:\\Users\\drslc\\OneDrive\\Documents\\GitHub\\Sudoku\\src\\puzzles\\test8.txt");
+//			}
+//		});
+//
+//		t1.start();
+//		t2.start();
+//		t3.start();
+//		t4.start();
 	}
 }
 

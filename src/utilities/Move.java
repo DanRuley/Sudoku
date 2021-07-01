@@ -1,6 +1,6 @@
 package utilities;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import views.Cell;
 
@@ -8,14 +8,17 @@ public class Move {
 
 	private Cell location;
 	private MoveType type;
-	private Integer value;
+	private Integer digit;
+	private Cell.state oldState;
 
 	/*
 	 * Stores the old notes overwritten by a move (e.g. delete/place digit) notate
 	 * moves don't really need to store this, you can just call the setNote Cell
 	 * method when undoing.
 	 */
-	private boolean[] notes;
+	private boolean[] oldNotes;
+
+	private Integer oldDigit;
 
 	/*
 	 * Only really relevant for placing digits - this will store a list of
@@ -23,12 +26,12 @@ public class Move {
 	 * placed, these notes are deleted but their locations are stored here. That
 	 * way, if the move is undone, these note deletions can be reverted.
 	 */
-	private ArrayList<Integer> affectedNoteCells;
+	private HashSet<Integer> affectedNoteCells;
 
 	public Move(Cell _location, MoveType _type, Integer _value) {
 		location = _location;
 		type = _type;
-		value = _value;
+		digit = _value;
 	}
 
 	public Cell getLocation() {
@@ -39,15 +42,39 @@ public class Move {
 		return type;
 	}
 
-	public Integer getValue() {
-		return value;
+	public Integer getDigit() {
+		return digit;
 	}
 
-	public boolean[] getNotes() {
-		return notes;
+	public Integer getOldDigit() {
+		return oldDigit;
 	}
 
-	public void setNotes(boolean[] notes) {
-		this.notes = notes;
+	public void setOldDigit(Integer oldDigit) {
+		this.oldDigit = oldDigit;
+	}
+
+	public boolean[] getOldNotes() {
+		return oldNotes;
+	}
+
+	public void setOldNotes(boolean[] oldNotes) {
+		this.oldNotes = oldNotes;
+	}
+
+	public HashSet<Integer> getAffectedNoteCells() {
+		return affectedNoteCells;
+	}
+
+	public void setAffectedNoteCells(HashSet<Integer> affectedNoteCells) {
+		this.affectedNoteCells = affectedNoteCells;
+	}
+
+	public Cell.state getOldState() {
+		return oldState;
+	}
+
+	public void setOldState(Cell.state oldState) {
+		this.oldState = oldState;
 	}
 }

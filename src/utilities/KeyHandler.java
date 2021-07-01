@@ -55,13 +55,13 @@ public class KeyHandler implements KeyListener {
 			return;
 		} else if (Character.isDigit(key)) {
 			key = (char) (key - '0');
-			toggled.setDigit(key);
+			// toggled.setDigit(key);
 			move = new Move(toggled, MoveType.place, (int) key);
 		} else if (noteKeys.containsKey(key)) {
-			toggled.setNote(noteKeys.get(key));
+			// toggled.setNote(noteKeys.get(key));
 			move = new Move(toggled, MoveType.notate, noteKeys.get(key));
 		} else if (keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE) {
-			toggled.clearDigit();
+			// toggled.clearDigit();
 			move = new Move(toggled, MoveType.delete, null);
 		} else {
 			return;
@@ -73,8 +73,6 @@ public class KeyHandler implements KeyListener {
 
 		if (move != null)
 			moveManager.processMove(move);
-
-		game.processMove();
 	}
 
 	// arrow handling merely changes toggled keys, no need to invoke a move
@@ -110,12 +108,12 @@ public class KeyHandler implements KeyListener {
 		}
 
 		game.setToggled(toggledRow, toggledCol);
+		game.repaintBoard();
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
 		keyLock = Constants.UNFILLED;
-
 	}
 
 	@Override
