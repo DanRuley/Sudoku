@@ -9,7 +9,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -29,7 +28,7 @@ public class SudokuGame extends JFrame {
 	private JPanel[][] gameBox;
 	private Cell[][] cells;
 	private Cell toggled;
-	private Random rng;
+	private int gcCounter;
 
 	private HashSet<Cell> conflicts;
 	private Dimension size;
@@ -55,7 +54,7 @@ public class SudokuGame extends JFrame {
 		hostPanel = new JPanel();
 		hostPanel.setLayout(new BorderLayout(5, 5));
 		toggled = null;
-		rng = new Random();
+		gcCounter = 0;
 
 		keyHandler = new KeyHandler(this, moveManager);
 		conflicts = new HashSet<>();
@@ -65,7 +64,7 @@ public class SudokuGame extends JFrame {
 		initState = new boolean[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		board = new int[Constants.GRID_SIZE][Constants.GRID_SIZE];
 		cells = new Cell[Constants.GRID_SIZE][Constants.GRID_SIZE];
-		readGameBoard(3);
+		readGameBoard(1);
 
 		for (int r = 0; r < board.length; r++)
 			for (int c = 0; c < board[0].length; c++)
@@ -111,6 +110,7 @@ public class SudokuGame extends JFrame {
 			}
 			SudokuGenerator solver = new SudokuGenerator(board);
 			board = solver.solve();
+			br.close();
 
 		} catch (FileNotFoundException e) {
 			System.out.println("Error: file not found.");
@@ -159,26 +159,26 @@ public class SudokuGame extends JFrame {
 
 	}
 
-	public void processMove() {
-		checkAndUpdateConflicts();
+	public void processMove(Cell target) {
+		checkAndUpdateConflicts(target);
 		repaintBoard();
 	}
 
-	private void partyTime() {
-		for (int r = 0; r < Constants.GRID_SIZE; r++)
-			for (int c = 0; c < Constants.GRID_SIZE; c++) {
-				cells[r][c].setBackground(Color.cyan);
-			}
-
-	}
-
-	private boolean gameComplete() {
-		for (int r = 0; r < Constants.GRID_SIZE; r++)
-			for (int c = 0; c < Constants.GRID_SIZE; c++)
-				if (cells[r][c].getDigit() != board[r][c])
-					return false;
-		return true;
-	}
+//	private void partyTime() {
+//		for (int r = 0; r < Constants.GRID_SIZE; r++)
+//			for (int c = 0; c < Constants.GRID_SIZE; c++) {
+//				cells[r][c].setBackground(Color.cyan);
+//			}
+//
+//	}
+//
+//	private boolean gameComplete() {
+//		for (int r = 0; r < Constants.GRID_SIZE; r++)
+//			for (int c = 0; c < Constants.GRID_SIZE; c++)
+//				if (cells[r][c].getDigit() != board[r][c])
+//					return false;
+//		return true;
+//	}
 
 	/**
 	 * A given cell is conflicted if it contains the same digit as another cell in
@@ -186,8 +186,10 @@ public class SudokuGame extends JFrame {
 	 * conflicted set to see if they are still in conflict. It also checks the
 	 * status of the toggled cell (which would have been affected by the previous
 	 * move) and adds any conflicts to the set.
+	 * 
+	 * @param target
 	 */
-	private void checkAndUpdateConflicts() {
+	private void checkAndUpdateConflicts(Cell target) {
 
 		HashSet<Cell> stillConflicted = new HashSet<Cell>();
 
@@ -202,7 +204,7 @@ public class SudokuGame extends JFrame {
 		}
 
 		// Check the current toggled cell for conflicts
-		stillConflicted.addAll(getRowColBoxConflicts(toggled));
+		stillConflicted.addAll(getRowColBoxConflicts(target));
 
 		conflicts = stillConflicted;
 	}
@@ -286,6 +288,21 @@ public class SudokuGame extends JFrame {
 				c.repaint();
 			}
 		}
+
+		// JPanels seem to accumulate excessive amounts of memory due to repeated calls
+		// to paintComponent - this helps keep the memory footprint low (~40MB). Using a
+		// separate thread keeps the gui from hanging.
+		if (gcCounter++ > 25) {
+			Thread t2 = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					System.gc();
+				}
+			});
+			t2.start();
+
+			gcCounter = 0;
+		}
 	}
 
 	/**
@@ -358,10 +375,13 @@ public class SudokuGame extends JFrame {
 				}
 			}
 
-		return affectedNoteCells;
+		return affectedNoteCells.size() > 0 ? affectedNoteCells : null;
 	}
 
 	public void setNotesInSet(HashSet<Integer> sideEffects, Integer digit) {
+		if (sideEffects == null)
+			return;
+
 		for (int coord : sideEffects) {
 			int r = coord / Constants.GRID_SIZE;
 			int c = coord % Constants.GRID_SIZE;

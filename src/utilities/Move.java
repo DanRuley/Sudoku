@@ -3,13 +3,14 @@ package utilities;
 import java.util.HashSet;
 
 import views.Cell;
+import views.Cell.state;
 
 public class Move {
 
 	private Cell location;
 	private MoveType type;
 	private Integer digit;
-	private Cell.state oldState;
+	private state oldState;
 
 	/*
 	 * Stores the old notes overwritten by a move (e.g. delete/place digit) notate
@@ -59,7 +60,9 @@ public class Move {
 	}
 
 	public void setOldNotes(boolean[] oldNotes) {
-		this.oldNotes = oldNotes;
+		this.oldNotes = new boolean[10];
+		for (int i = 0; i < oldNotes.length; i++)
+			this.oldNotes[i] = oldNotes[i];
 	}
 
 	public HashSet<Integer> getAffectedNoteCells() {
@@ -70,11 +73,16 @@ public class Move {
 		this.affectedNoteCells = affectedNoteCells;
 	}
 
-	public Cell.state getOldState() {
+	public state getOldState() {
 		return oldState;
 	}
 
-	public void setOldState(Cell.state oldState) {
+	public void setOldState(state oldState) {
 		this.oldState = oldState;
+	}
+
+	@Override
+	public String toString() {
+		return "[Type: " + type + ", Old State: " + oldState + ", value: " + digit + "]";
 	}
 }

@@ -134,14 +134,14 @@ public class SudokuGenerator {
 		return false;
 	}
 
-	private void printBoard() {
-		for (int r = 0; r < 9; r++) {
-			for (int c = 0; c < 9; c++)
-				System.out.print((board[r][c] == 0 ? " " : board[r][c]) + " ");
-			System.out.println();
-		}
-		System.out.println();
-	}
+//	private void printBoard() {
+//		for (int r = 0; r < 9; r++) {
+//			for (int c = 0; c < 9; c++)
+//				System.out.print((board[r][c] == 0 ? " " : board[r][c]) + " ");
+//			System.out.println();
+//		}
+//		System.out.println();
+//	}
 
 	private void addCandidate(int candidate, int r, int c, int box) {
 		board[r][c] = candidate;

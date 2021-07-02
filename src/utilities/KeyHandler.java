@@ -53,21 +53,23 @@ public class KeyHandler implements KeyListener {
 			handleArrows(keyCode, toggled);
 		} else if (toggled == null) {
 			return;
+		} else if (keyCode == KeyEvent.VK_Z && e.isControlDown()) {
+			moveManager.undo();
+		} else if (keyCode == KeyEvent.VK_Y && e.isControlDown()) {
+			moveManager.redo();
 		} else if (Character.isDigit(key)) {
 			key = (char) (key - '0');
-			// toggled.setDigit(key);
 			move = new Move(toggled, MoveType.place, (int) key);
 		} else if (noteKeys.containsKey(key)) {
-			// toggled.setNote(noteKeys.get(key));
 			move = new Move(toggled, MoveType.notate, noteKeys.get(key));
 		} else if (keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE) {
-			// toggled.clearDigit();
 			move = new Move(toggled, MoveType.delete, null);
 		} else {
 			return;
 		}
 
 		keyLock = keyCode;
+		
 		// Prevents Windows alert ding
 		e.consume();
 

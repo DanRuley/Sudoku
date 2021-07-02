@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Stack;
 
 import views.Cell;
+import views.Cell.state;
 import views.SudokuGame;
 
 public class MoveManager {
@@ -37,11 +38,11 @@ public class MoveManager {
 		case delete:
 
 			// nothing to do when deleting an empty cell
-			if (oldState == Cell.state.empty)
+			if (oldState == state.empty)
 				return;
-			else if (oldState == Cell.state.filled)
+			else if (oldState == state.filled)
 				move.setOldDigit(target.getDigit());
-			else if (oldState == Cell.state.notated)
+			else if (oldState == state.notated)
 				move.setOldNotes(target.getNotes());
 
 			target.clearCell();
@@ -49,8 +50,10 @@ public class MoveManager {
 
 		// need to store any digit replaced by this
 		case notate:
-			if (oldState == Cell.state.filled)
+			if (oldState == state.filled)
 				move.setOldDigit(target.getDigit());
+			else if (oldState == state.notated)
+				move.setOldNotes(target.getNotes());
 
 			target.setNote(move.getDigit());
 			break;
@@ -60,13 +63,13 @@ public class MoveManager {
 		case place:
 
 			// placing redundant numbers does nothing
-			if (oldState == Cell.state.filled) {
+			if (oldState == state.filled) {
 
 				if (target.getDigit() == move.getDigit())
 					return;
 
 				move.setOldDigit(target.getDigit());
-			} else if (oldState == Cell.state.notated) {
+			} else if (oldState == state.notated) {
 				move.setOldNotes(target.getNotes());
 			}
 
@@ -83,23 +86,50 @@ public class MoveManager {
 		}
 
 		undoStack.push(move);
-		game.processMove();
+		game.processMove(target);
 	}
 
-	public Move undo() {
+	public void undo() {
+		System.out.println("undo");
 		if (undoStack.size() == 0)
-			return null;
+			return;
 
-		redoStack.push(undoStack.peek());
-		return undoStack.pop();
+		Move move = undoStack.pop();
+		Cell target = move.getLocation();
+		state restoreState = move.getOldState();
+
+		switch (restoreState) {
+		case empty:
+			target.clearCell();
+			break;
+		case filled:
+			target.setDigit(move.getOldDigit());
+			break;
+		case notated:
+			if (move.getOldNotes() == null)
+				System.out.println("uh oh");
+			target.setNotes(move.getOldNotes());
+			break;
+		default:
+			break;
+		}
+
+		if (move.getType() == MoveType.place && move.getAffectedNoteCells() != null)
+			game.setNotesInSet(move.getAffectedNoteCells(), move.getDigit());
+
+		redoStack.push(move);
+		game.processMove(target);
 	}
 
-	public Move redo() {
-		if (redoStack.size() == 0)
-			return null;
+	public void redo() {
+		System.out.println("redo");
 
-		undoStack.push(redoStack.peek());
-		return redoStack.pop();
+		if (redoStack.size() == 0)
+			return;
+
+		Move move = redoStack.pop();
+
+		processMove(move);
 	}
 
 }

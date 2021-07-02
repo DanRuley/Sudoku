@@ -7,7 +7,6 @@ import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
-import java.util.HashSet;
 
 import constants.Constants;
 import javax.swing.BorderFactory;
@@ -42,7 +41,6 @@ public class Cell extends JPanel {
 			cellState = state.empty;
 
 		game = _game;
-		// conflicted = false;
 
 		if (isInitialNumber) {
 			displayNumber = actualNumber;
@@ -82,8 +80,6 @@ public class Cell extends JPanel {
 		this.displayNumber = num;
 
 		cellState = state.filled;
-
-		// repaint();
 	}
 
 	public void setNote(int num) {
@@ -107,7 +103,6 @@ public class Cell extends JPanel {
 		else
 			cellState = state.empty;
 
-		// repaint();
 	}
 
 	public void clearCell() {
@@ -118,8 +113,6 @@ public class Cell extends JPanel {
 		displayNumber = Constants.UNFILLED;
 
 		cellState = state.empty;
-
-		// repaint();
 	}
 
 	@Override
@@ -154,10 +147,13 @@ public class Cell extends JPanel {
 			g2d.setRenderingHints(Constants.DESKTOP_HINTS);
 		}
 
-		if (cellState == state.notated)
+		if (cellState == state.empty && this != game.getToggled())
+			this.setBackground(Constants.UNSELECTED_BG);
+		else if (cellState == state.notated)
 			drawNotes(g2d);
 		else if (cellState == state.filled || cellState == state.given)
 			drawNumber(g2d);
+
 	}
 
 	private void drawNumber(Graphics2D g) {
@@ -167,8 +163,8 @@ public class Cell extends JPanel {
 			if (this != game.getToggled())
 				this.setBackground(Constants.SAME_NUM_BG);
 		} else {
-			g.setFont(Constants.NUM_FONT);
 			this.setBackground(Constants.UNSELECTED_BG);
+			g.setFont(Constants.NUM_FONT);
 		}
 
 		if (game.isConflicted(this))
@@ -251,5 +247,12 @@ public class Cell extends JPanel {
 
 	public state getState() {
 		return cellState;
+	}
+
+	public void setNotes(boolean[] oldNotes) {
+		for (int i = 0; i < notes.length; i++)
+			notes[i] = oldNotes[i];
+
+		cellState = state.notated;
 	}
 }
